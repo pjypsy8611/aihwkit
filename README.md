@@ -17,7 +17,49 @@ device data. Every noise parameter defaults to `0.0`, so the model is
 `TwoStateReRamNoiseModel.from_measurements()` before drawing any conclusions.
 
 Modified files: `src/aihwkit/inference/converter/conductance.py`,
-`src/aihwkit/inference/noise/reram.py`, `src/aihwkit/inference/__init__.py`.
+`src/aihwkit/inference/noise/reram.py`, `src/aihwkit/inference/__init__.py`,
+`examples/39_two_state_mnist_inference.py`.
+
+## Example: MNIST on bit-sliced two-state cells
+
+`examples/39_two_state_mnist_inference.py` trains a small FP32 MLP, converts it
+with `convert_to_analog` onto IR-drop tiles whose unit cell is a
+`BinaryDeviceConductanceConverter`, and reports test accuracy at three stages:
+ideal cells (the digital INT reference), plus programming spread, plus IR drop.
+
+```bash
+# from the repository root, with the compiled extension available
+PYTHONPATH=src python examples/39_two_state_mnist_inference.py
+```
+
+The FP32 checkpoint is trained on the first run and reused afterwards, so only
+the first run pays for training.
+
+### Parameters
+
+The example is configured through module-level constants near the top of the
+file (there is no command-line interface yet) — edit them in place:
+
+| Constant | Default | Description |
+| --- | --- | --- |
+| `PATH_DATASET` | `data/DATASET` | Root directory of the torchvision MNIST dataset |
+| `PATH_CHECKPOINT` | `data/two_state_mnist_fp32.pt` | FP32 checkpoint. If it does not exist, the model is trained and saved there |
+| `EPOCHS` | `3` | Number of FP32 training epochs when no checkpoint is found |
+| `CROSSBAR_SIZE` | `32` | Array size (rows = columns), passed to `mapping.max_input_size` / `max_output_size`. The 784 inputs are zero-padded to a multiple of it (32 → 800 = 25×32) so that every row block is a full array, which the IR-drop tile requires |
+| `N_BITS` | `4` | 1-bit cells per array used for one weight. 4 → 4 cells in the positive array (`f = 1, 2, 4, 8`) plus 4 in the negative array, 31 levels in total (INT4). Every cell is always 1-bit (HRS/LRS) |
+| `G_LRS` | `20.0` | LRS conductance (µS) |
+| `G_HRS` | `0.2` | HRS conductance (µS) |
+| `PROGRAMMING_SPREAD` | `0.02` | Programming spread: relative std of the programmed conductance of each cell (LRS 20 → std 0.4 µS, HRS 0.2 → std 0.004 µS). Once programmed, the values stay fixed for the whole inference run |
+| `WIRE_RESISTANCE` | `0.35` | Wire resistance between neighbouring cells (Ω), used for the IR-drop calculation |
+| `INPUT_BITS` | `6` | Input DAC bit width: `inp_res = 1/(2**6 - 2)`, i.e. integer inputs −31…31. The ADC is ideal |
+| `REPEATS` | `1` | Independent programming draws. Results are reported as mean ± std (std is 0 for a single draw) |
+| `BATCH_SIZE` | `128` | FP32 training batch size (the evaluation loader uses 500) |
+| `DEVICE` | auto | `cuda` when available, otherwise `cpu`. CPU works but is slow |
+
+Note that the programming spread here is carried by the **converter**, not by
+`TwoStateReRamNoiseModel`: the example never calls `program_analog_weights`, so
+the PCM noise of the carrier noise model never applies. Use one mechanism or
+the other, not both.
 
 Everything below this line is the upstream IBM README.
 
