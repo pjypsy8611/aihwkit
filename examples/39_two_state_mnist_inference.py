@@ -72,8 +72,6 @@ INPUT_BITS = 6
 # FP32 training.
 EPOCHS = 3
 BATCH_SIZE = 128
-# Independent programming draws per stage (mean +- std is reported).
-REPEATS = 1
 
 
 def load_images():
@@ -167,9 +165,9 @@ def create_rpu_config(g_converter, wire_resistance):
     return rpu_config
 
 
-def analog_accuracy(model, test_data, spread, wire_resistance, seed):
+def analog_accuracy(model, test_data, spread, wire_resistance):
     """Convert the FP32 model to analog and return its test accuracy."""
-    torch.manual_seed(seed)  # programming draw
+    torch.manual_seed(0)  # programming draw
     g_converter = BinaryDeviceConductanceConverter(
         n_bits=N_BITS, g_lrs=G_LRS, g_hrs=G_HRS, g_lrs_std=spread * G_LRS, g_hrs_std=spread * G_HRS
     )
@@ -208,16 +206,10 @@ def main():
         ("+ prog spread {:g} %".format(100 * PROGRAMMING_SPREAD), PROGRAMMING_SPREAD, 1e-9),
         ("+ IR drop {:g} Ohm".format(WIRE_RESISTANCE), PROGRAMMING_SPREAD, WIRE_RESISTANCE),
     ]
-    print("{:<28s} {:>24s}".format("stage", "accuracy (mean +- std) %"))
+    print("{:<28s} {:>12s}".format("stage", "accuracy %"))
     for name, spread, wire_resistance in stages:
-        accs = torch.tensor(
-            [
-                analog_accuracy(model, test_data, spread, wire_resistance, seed)
-                for seed in range(REPEATS)
-            ]
-        )
-        std = accs.std().item() if REPEATS > 1 else 0.0
-        print("{:<28s} {:>16.2f} +- {:<5.2f}".format(name, accs.mean().item(), std))
+        accuracy = analog_accuracy(model, test_data, spread, wire_resistance)
+        print("{:<28s} {:>12.2f}".format(name, accuracy))
 
 
 if __name__ == "__main__":

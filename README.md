@@ -52,7 +52,6 @@ file (there is no command-line interface yet) — edit them in place:
 | `PROGRAMMING_SPREAD` | `0.02` | Programming spread: relative std of the programmed conductance of each cell (LRS 20 → std 0.4 µS, HRS 0.2 → std 0.004 µS). Once programmed, the values stay fixed for the whole inference run |
 | `WIRE_RESISTANCE` | `0.35` | Wire resistance between neighbouring cells (Ω), used for the IR-drop calculation |
 | `INPUT_BITS` | `6` | Input DAC bit width: `inp_res = 1/(2**6 - 2)`, i.e. integer inputs −31…31. The ADC is ideal |
-| `REPEATS` | `1` | Independent programming draws. Results are reported as mean ± std (std is 0 for a single draw) |
 | `BATCH_SIZE` | `128` | FP32 training batch size (the evaluation loader uses 500) |
 | `DEVICE` | auto | `cuda` when available, otherwise `cpu`. CPU works but is slow |
 
