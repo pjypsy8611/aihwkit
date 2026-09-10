@@ -1,3 +1,28 @@
+# Fork notes — two-state (HRS/LRS) ReRAM support
+
+This fork of [IBM/aihwkit](https://github.com/IBM/aihwkit) adds support for
+filamentary two-state devices (e.g. Ag/MoS2/Au ReRAM) that switch between a
+high-resistance state (HRS) and a low-resistance state (LRS) and cannot be
+programmed to the intermediate conductances the stock converters assume.
+
+| Area | Change |
+| --- | --- |
+| Conductance conversion | `BinaryDeviceConductanceConverter` — weight quantisation, bit slicing, differential HRS/LRS array mapping |
+| Device noise | `TwoStateReRamNoiseModel` — programming-noise distributions applied per LRS/HRS state |
+| Package integration | Both classes exported from `aihwkit.inference` |
+
+**Status: calibration pending.** Parameters still have to be fitted to measured
+device data. Every noise parameter defaults to `0.0`, so the model is
+*noise-free out of the box* — populate it with
+`TwoStateReRamNoiseModel.from_measurements()` before drawing any conclusions.
+
+Modified files: `src/aihwkit/inference/converter/conductance.py`,
+`src/aihwkit/inference/noise/reram.py`, `src/aihwkit/inference/__init__.py`.
+
+Everything below this line is the upstream IBM README.
+
+---
+
 # IBM Analog Hardware Acceleration Kit
 
 ![PyPI](https://img.shields.io/pypi/v/aihwkit)
